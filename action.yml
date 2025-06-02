@@ -1,0 +1,23 @@
+name: "Variables Allocation"
+description: "Replace placeholders on an .env template file to a functional env file ready to use on production"
+inputs:
+  env_file_in:
+    description: "Path to the .env file template"
+    required: true
+  env_file_out:
+    description: "Path to the .env file processed"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: |
+        echo "REPO_VARS=${{ toJson(vars) }}" >> $GITHUB_ENV
+        echo "REPO_SECRETS=${{ toJson(secrets) }}" >> $GITHUB_ENV
+    - shell: bash
+      run: chmod +x ${{ github.action_path }}/entrypoint.sh
+    - shell: bash
+      run: ${{ github.action_path }}/entrypoint.sh
+      env:
+        ENV_FILE_IN: ${{ inputs.env_file_in }}
+        ENV_FILE_OUT: ${{ inputs.env_file_out }}
