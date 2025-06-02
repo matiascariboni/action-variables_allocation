@@ -54,12 +54,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Variable secrets allocation & CLOUDFRONT_DIST_ID
+      - name: Variable allocation & CLOUDFRONT_DIST_ID
         id: variables_allocation
-        uses: your-user/env-generator-action@v1
+        uses: matiascariboni/action-variables_allocation@v1.0.1
         with:
-          env_file_in: .env.in
-          env_file_out: .env
+          env_file_in: ${{ env.ENV_FILE_IN }}
+          env_file_out: ${{ env.ENV_FILE_OUT }}
+          repo_vars: ${{ toJson(vars) }}
+          repo_secrets: ${{ toJson(secrets) }}
 
       - name: Print output
         run: echo "CloudFront ID: ${{ steps.variables_allocation.outputs.CLOUDFRONT_DIST_ID }}"
@@ -69,10 +71,12 @@ jobs:
 
 ## 👇🏻 Inputs
 
-| Name           | Description                                       | Required |
-| -------------- | ------------------------------------------------- | -------- |
-| `env_file_in`  | Path to input file with `'{}'`-style placeholders   | ✅ Yes    |
+| Name           | Description                                       | Required  |
+| -------------- | ------------------------------------------------- | --------- |
+| `env_file_in`  | Path to input file with `'{}'`-style placeholders | ✅ Yes    |
 | `env_file_out` | Path to save the output file with resolved values | ✅ Yes    |
+| `repo_vars`    | Variables allocated on current repo               | ✅ Yes    |
+| `repo_secrets` | Variables allocated on current secret             | ✅ Yes    |
 
 ---
 

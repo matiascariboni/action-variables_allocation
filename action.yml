@@ -7,13 +7,15 @@ inputs:
   env_file_out:
     description: "Path to the .env file processed"
     required: true
+  repo_vars:
+    description: "Environment variables allocated on current repo"
+    required: true
+  repo_secrets:
+    description: "Environment secrets allocated on current repo"
+    required: true
 runs:
   using: "composite"
   steps:
-    - shell: bash
-      run: |
-        echo "REPO_VARS=${{ toJson(vars) }}" >> $GITHUB_ENV
-        echo "REPO_SECRETS=${{ toJson(secrets) }}" >> $GITHUB_ENV
     - shell: bash
       run: chmod +x ${{ github.action_path }}/entrypoint.sh
     - shell: bash
@@ -21,3 +23,5 @@ runs:
       env:
         ENV_FILE_IN: ${{ inputs.env_file_in }}
         ENV_FILE_OUT: ${{ inputs.env_file_out }}
+        REPO_VARS: ${{ inputs.repo_vars}}
+        REPO_SECRETS: ${{ inputs.repo_secrets}}

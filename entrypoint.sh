@@ -1,12 +1,8 @@
 # If any error occurs in the script, the execution will stop with a non-zero exit code.
 set -e
 
-# Getting file paths
-env_file_in="$ENV_FILE_IN"
-env_file_out="$ENV_FILE_OUT"
-
 # Erase or create the env file out
-> "$env_file_out"
+> "$ENV_FILE_OUT"
 
 # Loop through each line of the input env file
 while IFS= read -r line || [ -n "$line" ]
@@ -45,9 +41,9 @@ do
     fi
 
     # Write the processed line to the output env file
-    echo "$line" >> "$env_file_out"
+    echo "$line" >> "$ENV_FILE_OUT"
   fi
-done < "$env_file_in"
+done < "$ENV_FILE_IN"
 
 # Build the full variable name for the CloudFront distribution ID,
 # using the uppercase branch name as a prefix (e.g., MAIN_CLOUDFRONT_DIST_ID)
