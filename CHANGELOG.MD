@@ -20,6 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initialized action
 
-[Unreleased]: https://github.com/Global-Smart-IoT/aws-interface/compare/v1.0.1...HEAD
-[1.0.1]: https://github.com/Global-Smart-IoT/aws-interface/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/Global-Smart-IoT/aws-interface/compare/f29d4e8...v1.0.0
+[Unreleased]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/matiascariboni/action-variables_allocation/compare/f29d4e8...v1.0.0
