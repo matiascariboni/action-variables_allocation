@@ -55,13 +55,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Variable secrets allocation & CLOUDFRONT_DIST_ID
+        id: variables_allocation
         uses: your-user/env-generator-action@v1
         with:
           env_file_in: .env.in
           env_file_out: .env
 
       - name: Print output
-        run: echo "CloudFront ID: ${{ steps.env_generator.outputs.CLOUDFRONT_DIST_ID }}"
+        run: echo "CloudFront ID: ${{ steps.variables_allocation.outputs.CLOUDFRONT_DIST_ID }}"
 ```
 
 ---
