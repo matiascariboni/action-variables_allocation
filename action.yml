@@ -13,6 +13,9 @@ inputs:
   repo_secrets:
     description: "Environment secrets allocated on current repo"
     required: true
+outputs:
+  CLOUDFRONT_DIST_ID:
+    description: "Resolved CloudFront distribution ID from vars or secrets"
 runs:
   using: "composite"
   steps:
