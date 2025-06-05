@@ -32,7 +32,10 @@ do
       fi
 
       # If the value is not a number, true, or false, wrap it in single quotes
-      if ! [[ "$var_value" =~ ^[0-9]+$ ]] && [[ "$var_value" != "true" ]] && [[ "$var_value" != "false" ]]; then
+      if ! [[ "$var_value" =~ ^[0-9]+$ ]] && \
+      [[ "$var_value" != "true" ]] && \
+      [[ "$var_value" != "false" ]] && \
+      ! [[ "$var_value" =~ ^\[[^]]*\]$ ]]; then
         var_value="'$var_value'"
       fi
 
@@ -51,7 +54,7 @@ full_var_name="$(echo "${GITHUB_REF_NAME}" | tr '[:lower:]' '[:upper:]')_CLOUDFR
 
 # Try to get the value from REPO_VARS using the full variable name
 CLOUDFRONT_DIST_ID=$(echo "$REPO_VARS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
-
+echo full var name: $full_var_name value: $CLOUDFRONT_DIST_ID
 # If not found, try REPO_SECRETS with the same full variable name
 [[ -z "$CLOUDFRONT_DIST_ID" ]] && CLOUDFRONT_DIST_ID=$(echo "$REPO_SECRETS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
 
