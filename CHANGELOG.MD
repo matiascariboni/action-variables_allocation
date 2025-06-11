@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5]
+
+### Added
+
+- Arrays are allowed in venv
+
+### Fixed
+
+- Cloudfront id distribution is no needed anymore
+- Example of usage on readme are updated
+
 ## [1.0.1]
 
 ### Fixed
@@ -20,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initialized action
 
-[Unreleased]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.5...HEAD
+[1.0.5]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.1...v1.0.5
 [1.0.1]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/matiascariboni/action-variables_allocation/compare/f29d4e8...v1.0.0
