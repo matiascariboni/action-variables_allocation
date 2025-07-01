@@ -16,13 +16,16 @@ inputs:
 outputs:
   CLOUDFRONT_DIST_ID:
     description: "Resolved CloudFront distribution ID from vars or secrets"
+    value: ${{ steps.entrypoint.outputs.CLOUDFRONT_DIST_ID }}
 runs:
   using: "composite"
   steps:
-    - shell: bash
-      run: chmod +x ${{ github.action_path }}/entrypoint.sh
-    - shell: bash
-      run: ${{ github.action_path }}/entrypoint.sh
+    - id: entrypoint
+      shell: bash
+      run: |
+        chmod +x ${{ github.action_path }}/entrypoint.sh
+        CLOUDFRONT_DIST_ID=$(${github.action_path}/entrypoint.sh)
+        echo "CLOUDFRONT_DIST_ID=$CLOUDFRONT_DIST_ID" >> $GITHUB_OUTPUT
       env:
         ENV_FILE_IN: ${{ inputs.env_file_in }}
         ENV_FILE_OUT: ${{ inputs.env_file_out }}

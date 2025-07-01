@@ -64,10 +64,10 @@ CLOUDFRONT_DIST_ID=$(echo "$REPO_VARS" | jq -r --arg key "$full_var_name" '.[$ke
 # Finally, try REPO_VARS without the branch prefix
 [[ -z "$CLOUDFRONT_DIST_ID" ]] && CLOUDFRONT_DIST_ID=$(echo "$REPO_VARS" | jq -r --arg key "CLOUDFRONT_DIST_ID" '.[$key] // empty')
 
-# If the variable is still missing or null, stop the script with an error
+# If the variable is still missing or null
 if [ -z "$CLOUDFRONT_DIST_ID" ] || [[ "$CLOUDFRONT_DIST_ID" == "null" ]]; then
   echo "CLOUDFRONT_DIST_ID not found in REPO_VARS or REPO_SECRETS."
 fi
 
 # Exporting CloudFront Distribution
-echo "CLOUDFRONT_DIST_ID=$CLOUDFRONT_DIST_ID" >> "$GITHUB_OUTPUT"
+echo "$CLOUDFRONT_DIST_ID"
