@@ -24,8 +24,7 @@ runs:
       shell: bash
       run: |
         chmod +x ${{ github.action_path }}/entrypoint.sh
-        CLOUDFRONT_DIST_ID=$(${{ github.action_path }}/entrypoint.sh)
-        echo "CLOUDFRONT_DIST_ID=$CLOUDFRONT_DIST_ID" >> $GITHUB_OUTPUT
+        ${{ github.action_path }}/entrypoint.sh
       env:
         ENV_FILE_IN: ${{ inputs.env_file_in }}
         ENV_FILE_OUT: ${{ inputs.env_file_out }}
