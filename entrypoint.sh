@@ -31,12 +31,14 @@ while IFS= read -r line || [ -n "$line" ]; do
       fi
 
       # If the value is not a number, true, or false, wrap it in single quotes or the output file is not a json
-      if (! [[ "$var_value" =~ ^[0-9]+$ ]] &&
+      if [[ "$ENV_FILE_OUT" == *.json ]]; then
+        var_value="\"$var_value\""
+      elif ! [[ "$var_value" =~ ^[0-9]+$ ]] &&
         [[ "$var_value" != "true" ]] &&
         [[ "$var_value" != "false" ]] &&
-        ! [[ "$var_value" =~ ^\[[^]]*\]$ ]]) ||
-        [[ "$ENV_FILE_OUT" == *.json ]]; then
+        ! [[ "$var_value" =~ ^\[[^]]*\]$ ]]; then
         var_value="'$var_value'"
+        fie="'$var_value'"
       fi
 
       # Replace the placeholder in the line with the resolved value
