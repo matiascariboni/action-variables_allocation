@@ -2,11 +2,10 @@
 set -e
 
 # Erase or create the env file out
-> "$ENV_FILE_OUT"
+>"$ENV_FILE_OUT"
 
 # Loop through each line of the input env file
-while IFS= read -r line || [ -n "$line" ]
-do
+while IFS= read -r line || [ -n "$line" ]; do
   # Ignore lines that start with '//' (treated as comments)
   if [[ ! "$line" =~ ^// ]]; then
 
@@ -31,11 +30,12 @@ do
         exit 1
       fi
 
-      # If the value is not a number, true, or false, wrap it in single quotes
-      if ! [[ "$var_value" =~ ^[0-9]+$ ]] && \
-      [[ "$var_value" != "true" ]] && \
-      [[ "$var_value" != "false" ]] && \
-      ! [[ "$var_value" =~ ^\[[^]]*\]$ ]]; then
+      # If the value is not a number, true, or false, wrap it in single quotes or the output file is not a json
+      if (! [[ "$var_value" =~ ^[0-9]+$ ]] &&
+        [[ "$var_value" != "true" ]] &&
+        [[ "$var_value" != "false" ]] &&
+        ! [[ "$var_value" =~ ^\[[^]]*\]$ ]]) ||
+        [[ "$ENV_FILE_OUT" == *.json ]]; then
         var_value="'$var_value'"
       fi
 
@@ -44,9 +44,9 @@ do
     fi
 
     # Write the processed line to the output env file
-    echo "$line" >> "$ENV_FILE_OUT"
+    echo "$line" >>"$ENV_FILE_OUT"
   fi
-done < "$ENV_FILE_IN"
+done <"$ENV_FILE_IN"
 
 # Build the full variable name for the CloudFront distribution ID,
 # using the uppercase branch name as a prefix (e.g., MAIN_CLOUDFRONT_DIST_ID)
@@ -71,4 +71,4 @@ if [ -z "$CLOUDFRONT_DIST_ID" ] || [[ "$CLOUDFRONT_DIST_ID" == "null" ]]; then
 fi
 
 # Exporting CloudFront Distribution
-echo "CLOUDFRONT_DIST_ID=$CLOUDFRONT_DIST_ID" >> "$GITHUB_OUTPUT"
+echo "CLOUDFRONT_DIST_ID=$CLOUDFRONT_DIST_ID" >>"$GITHUB_OUTPUT"
