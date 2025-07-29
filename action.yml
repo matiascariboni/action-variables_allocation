@@ -1,16 +1,16 @@
 name: "Variables Allocation"
 description: "Replace placeholders on an .env template file to a functional env file ready to use on production"
 inputs:
-  env_file_in:
+  ENV_FILE_IN:
     description: "Path to the .env file template"
     required: true
-  env_file_out:
+  ENV_FILE_OUT:
     description: "Path to the .env file processed"
     required: true
-  repo_vars:
+  REPO_VARS:
     description: "Environment variables allocated on current repo"
     required: true
-  repo_secrets:
+  REPO_SECRETS:
     description: "Environment secrets allocated on current repo"
     required: true
 outputs:
@@ -26,7 +26,7 @@ runs:
         chmod +x ${{ github.action_path }}/entrypoint.sh
         ${{ github.action_path }}/entrypoint.sh
       env:
-        ENV_FILE_IN: ${{ inputs.env_file_in }}
-        ENV_FILE_OUT: ${{ inputs.env_file_out }}
-        REPO_VARS: ${{ inputs.repo_vars}}
-        REPO_SECRETS: ${{ inputs.repo_secrets}}
+        ENV_FILE_IN: ${{ inputs.ENV_FILE_IN }}
+        ENV_FILE_OUT: ${{ inputs.ENV_FILE_OUT }}
+        REPO_VARS: ${{ inputs.REPO_VARS}}
+        REPO_SECRETS: ${{ inputs.REPO_SECRETS}}
