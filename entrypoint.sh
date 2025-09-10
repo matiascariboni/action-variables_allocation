@@ -1,11 +1,15 @@
 # If any error occurs in the script, the execution will stop with a non-zero exit code.
 set -e
 
+# Debug: Show GITHUB_REF_NAME value
+echo "DEBUG: GITHUB_REF_NAME='$GITHUB_REF_NAME'" >&2
+
 # Erase or create the env file out
 >"$ENV_FILE_OUT"
 
 # Loop through each line of the input env file
 while IFS= read -r line || [ -n "$line" ]; do
+  echo "DEBUG: Processing line: $line" >&2
   original_line="$line"
 
   # Process all placeholders in the line using a while loop
@@ -15,37 +19,70 @@ while IFS= read -r line || [ -n "$line" ]; do
     # Extract just the variable name from the placeholder
     var_name=$(echo "$placeholder" | grep -oP "(?<=\{)[a-zA-Z0-9_]+(?=\})")
 
-    echo "Processing placeholder '$placeholder' -> variable '$var_name'"
-    echo "Looking for: $full_var_name or $var_name"
-    echo "Found value: '$var_value'"
+    echo "DEBUG: Processing placeholder '$placeholder' -> variable '$var_name'" >&2
 
     # Build the full variable name using the uppercase ref name (e.g., BRANCHNAME_VARNAME)
-    full_var_name="$(echo "${GITHUB_REF_NAME}" | tr '[:lower:]' '[:upper:]')_${var_name}"
+    if [[ -n "$GITHUB_REF_NAME" ]]; then
+      full_var_name="$(echo "${GITHUB_REF_NAME}" | tr '[:lower:]' '[:upper:]')_${var_name}"
+    else
+      full_var_name=""
+    fi
+
+    echo "DEBUG: Looking for: '$full_var_name' or '$var_name'" >&2
 
     # Try to resolve the variable value by checking secrets and vars in priority order
-    var_value=$(echo "$REPO_SECRETS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
-    [[ -z "$var_value" ]] && var_value=$(echo "$REPO_VARS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
-    [[ -z "$var_value" ]] && var_value=$(echo "$REPO_SECRETS" | jq -r --arg key "$var_name" '.[$key] // empty')
-    [[ -z "$var_value" ]] && var_value=$(echo "$REPO_VARS" | jq -r --arg key "$var_name" '.[$key] // empty')
+    var_value=""
+
+    # Only try full_var_name if it's not empty
+    if [[ -n "$full_var_name" ]]; then
+      var_value=$(echo "$REPO_SECRETS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
+      echo "DEBUG: Checked REPO_SECRETS[$full_var_name]: '$var_value'" >&2
+    fi
+
+    if [[ -z "$var_value" ]] && [[ -n "$full_var_name" ]]; then
+      var_value=$(echo "$REPO_VARS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
+      echo "DEBUG: Checked REPO_VARS[$full_var_name]: '$var_value'" >&2
+    fi
+
+    if [[ -z "$var_value" ]]; then
+      var_value=$(echo "$REPO_SECRETS" | jq -r --arg key "$var_name" '.[$key] // empty')
+      echo "DEBUG: Checked REPO_SECRETS[$var_name]: '$var_value'" >&2
+    fi
+
+    if [[ -z "$var_value" ]]; then
+      var_value=$(echo "$REPO_VARS" | jq -r --arg key "$var_name" '.[$key] // empty')
+      echo "DEBUG: Checked REPO_VARS[$var_name]: '$var_value'" >&2
+    fi
+
+    echo "DEBUG: Final resolved value for '$var_name': '$var_value'" >&2
 
     # Fail the script if the variable could not be found
-    if [ -z "$var_value" ] || [[ "$var_value" == "null" ]]; then
+    if [[ -z "$var_value" ]] || [[ "$var_value" == "null" ]]; then
       echo "Error: $var_name not found in REPO_VARS or REPO_SECRETS." >&2
+      echo "DEBUG: Available REPO_SECRETS keys:" >&2
+      echo "$REPO_SECRETS" | jq -r 'keys[]' >&2
+      echo "DEBUG: Available REPO_VARS keys:" >&2
+      echo "$REPO_VARS" | jq -r 'keys[]' >&2
       exit 1
     fi
 
     # If the value is not a number, true, or false, wrap it in single quotes (unless it's JSON)
+    processed_value="$var_value"
     if [[ "$ENV_FILE_OUT" == *.json ]]; then
-      var_value="\"$var_value\""
+      processed_value="\"$var_value\""
     elif ! [[ "$var_value" =~ ^[0-9]+$ ]] &&
       [[ "$var_value" != "true" ]] &&
       [[ "$var_value" != "false" ]] &&
       ! [[ "$var_value" =~ ^\[[^]]*\]$ ]]; then
-      var_value="'$var_value'"
+      processed_value="'$var_value'"
     fi
 
+    echo "DEBUG: Replacing '$placeholder' with '$processed_value'" >&2
+
     # Replace THIS SPECIFIC placeholder in the line with the resolved value
-    line=${line/$placeholder/$var_value}
+    line=${line/$placeholder/$processed_value}
+
+    echo "DEBUG: Line after replacement: $line" >&2
   done
 
   # Write the processed line to the output env file
@@ -54,19 +91,27 @@ done <"$ENV_FILE_IN"
 
 # Build the full variable name for the CloudFront distribution ID,
 # using the uppercase branch name as a prefix (e.g., MAIN_CLOUDFRONT_DIST_ID)
-full_var_name="$(echo "${GITHUB_REF_NAME}" | tr '[:lower:]' '[:upper:]')_CLOUDFRONT_DIST_ID"
+if [[ -n "$GITHUB_REF_NAME" ]]; then
+  full_var_name="$(echo "${GITHUB_REF_NAME}" | tr '[:lower:]' '[:upper:]')_CLOUDFRONT_DIST_ID"
+else
+  full_var_name="CLOUDFRONT_DIST_ID"
+fi
 
 # Try to get the value from REPO_VARS using the full variable name
-CLOUDFRONT_DIST_ID=$(echo "$REPO_VARS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
-# If not found, try REPO_SECRETS with the same full variable name
-[[ -z "$CLOUDFRONT_DIST_ID" ]] && CLOUDFRONT_DIST_ID=$(echo "$REPO_SECRETS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
+CLOUDFRONT_DIST_ID=""
+if [[ -n "$full_var_name" ]] && [[ "$full_var_name" != "CLOUDFRONT_DIST_ID" ]]; then
+  CLOUDFRONT_DIST_ID=$(echo "$REPO_VARS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
+  # If not found, try REPO_SECRETS with the same full variable name
+  [[ -z "$CLOUDFRONT_DIST_ID" ]] && CLOUDFRONT_DIST_ID=$(echo "$REPO_SECRETS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
+fi
+
 # If still not found, try REPO_SECRETS without the branch prefix
 [[ -z "$CLOUDFRONT_DIST_ID" ]] && CLOUDFRONT_DIST_ID=$(echo "$REPO_SECRETS" | jq -r --arg key "CLOUDFRONT_DIST_ID" '.[$key] // empty')
 # Finally, try REPO_VARS without the branch prefix
 [[ -z "$CLOUDFRONT_DIST_ID" ]] && CLOUDFRONT_DIST_ID=$(echo "$REPO_VARS" | jq -r --arg key "CLOUDFRONT_DIST_ID" '.[$key] // empty')
 
 # If the variable is still missing or null
-if [ -z "$CLOUDFRONT_DIST_ID" ] || [[ "$CLOUDFRONT_DIST_ID" == "null" ]]; then
+if [[ -z "$CLOUDFRONT_DIST_ID" ]] || [[ "$CLOUDFRONT_DIST_ID" == "null" ]]; then
   echo "CLOUDFRONT_DIST_ID not found in REPO_VARS or REPO_SECRETS."
   CLOUDFRONT_DIST_ID="null"
 fi
