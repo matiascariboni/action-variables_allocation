@@ -24,7 +24,7 @@ while IFS= read -r line || [ -n "$line" ]; do
     # Extract just the variable name from the placeholder
     var_name=$(echo "$placeholder" | grep -oP "(?<=\{)[a-zA-Z0-9_]+(?=\})")
 
-    echo "Processing placeholder '$placeholder' -> variable '$var_name'"
+    echo -e "\033[1;34m🔍 Looking for:\033[0m \033[1;32m'$full_var_name'\033[0m or \033[1;32m'$var_name'\033[0m"
 
     # Build the full variable name using the uppercase ref name (e.g., BRANCHNAME_VARNAME)
     if [[ -n "$GITHUB_REF_NAME" ]]; then
@@ -32,8 +32,6 @@ while IFS= read -r line || [ -n "$line" ]; do
     else
       full_var_name=""
     fi
-
-    echo "Looking for: '$full_var_name' or '$var_name'"
 
     # Try to resolve the variable value by checking secrets and vars in priority order
     var_value=""
