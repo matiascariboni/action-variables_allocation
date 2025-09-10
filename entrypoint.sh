@@ -1,15 +1,20 @@
 # If any error occurs in the script, the execution will stop with a non-zero exit code.
 set -e
 
-# Debug: Show GITHUB_REF_NAME value
-echo "DEBUG: GITHUB_REF_NAME='$GITHUB_REF_NAME'" >&2
+# Show GITHUB_REF_NAME value
+echo "GITHUB_REF_NAME='$GITHUB_REF_NAME'"
+
+echo "Available REPO_SECRETS keys:"
+echo "$REPO_SECRETS" | jq -r 'keys[]'
+echo "Available REPO_VARS keys:"
+echo "$REPO_VARS" | jq -r 'keys[]'
 
 # Erase or create the env file out
 >"$ENV_FILE_OUT"
 
 # Loop through each line of the input env file
 while IFS= read -r line || [ -n "$line" ]; do
-  echo "DEBUG: Processing line: $line" >&2
+  echo "Processing line: $line"
   original_line="$line"
 
   # Process all placeholders in the line using a while loop
@@ -19,7 +24,7 @@ while IFS= read -r line || [ -n "$line" ]; do
     # Extract just the variable name from the placeholder
     var_name=$(echo "$placeholder" | grep -oP "(?<=\{)[a-zA-Z0-9_]+(?=\})")
 
-    echo "DEBUG: Processing placeholder '$placeholder' -> variable '$var_name'" >&2
+    echo "Processing placeholder '$placeholder' -> variable '$var_name'"
 
     # Build the full variable name using the uppercase ref name (e.g., BRANCHNAME_VARNAME)
     if [[ -n "$GITHUB_REF_NAME" ]]; then
@@ -28,7 +33,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       full_var_name=""
     fi
 
-    echo "DEBUG: Looking for: '$full_var_name' or '$var_name'" >&2
+    echo "Looking for: '$full_var_name' or '$var_name'"
 
     # Try to resolve the variable value by checking secrets and vars in priority order
     var_value=""
@@ -36,33 +41,29 @@ while IFS= read -r line || [ -n "$line" ]; do
     # Only try full_var_name if it's not empty
     if [[ -n "$full_var_name" ]]; then
       var_value=$(echo "$REPO_SECRETS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
-      echo "DEBUG: Checked REPO_SECRETS[$full_var_name]: '$var_value'" >&2
+      echo "Checked REPO_SECRETS[$full_var_name]: '$var_value'"
     fi
 
     if [[ -z "$var_value" ]] && [[ -n "$full_var_name" ]]; then
       var_value=$(echo "$REPO_VARS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
-      echo "DEBUG: Checked REPO_VARS[$full_var_name]: '$var_value'" >&2
+      echo "Checked REPO_VARS[$full_var_name]: '$var_value'"
     fi
 
     if [[ -z "$var_value" ]]; then
       var_value=$(echo "$REPO_SECRETS" | jq -r --arg key "$var_name" '.[$key] // empty')
-      echo "DEBUG: Checked REPO_SECRETS[$var_name]: '$var_value'" >&2
+      echo "Checked REPO_SECRETS[$var_name]: '$var_value'"
     fi
 
     if [[ -z "$var_value" ]]; then
       var_value=$(echo "$REPO_VARS" | jq -r --arg key "$var_name" '.[$key] // empty')
-      echo "DEBUG: Checked REPO_VARS[$var_name]: '$var_value'" >&2
+      echo "Checked REPO_VARS[$var_name]: '$var_value'"
     fi
 
-    echo "DEBUG: Final resolved value for '$var_name': '$var_value'" >&2
+    echo "Final resolved value for '$var_name': '$var_value'"
 
     # Fail the script if the variable could not be found
     if [[ -z "$var_value" ]] || [[ "$var_value" == "null" ]]; then
-      echo "Error: $var_name not found in REPO_VARS or REPO_SECRETS." >&2
-      echo "DEBUG: Available REPO_SECRETS keys:" >&2
-      echo "$REPO_SECRETS" | jq -r 'keys[]' >&2
-      echo "DEBUG: Available REPO_VARS keys:" >&2
-      echo "$REPO_VARS" | jq -r 'keys[]' >&2
+      echo "Error: $var_name not found in REPO_VARS or REPO_SECRETS."
       exit 1
     fi
 
@@ -77,12 +78,12 @@ while IFS= read -r line || [ -n "$line" ]; do
       processed_value="'$var_value'"
     fi
 
-    echo "DEBUG: Replacing '$placeholder' with '$processed_value'" >&2
+    echo "Replacing '$placeholder' with '$processed_value'"
 
     # Replace THIS SPECIFIC placeholder in the line with the resolved value
     line=${line/$placeholder/$processed_value}
 
-    echo "DEBUG: Line after replacement: $line" >&2
+    echo "Line after replacement: $line"
   done
 
   # Write the processed line to the output env file
