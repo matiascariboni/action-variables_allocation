@@ -15,13 +15,29 @@ echo "$REPO_VARS" | jq -r 'keys[]'
 # Loop through each line of the input env file
 while IFS= read -r line || [ -n "$line" ]; do
   echo "Processing line: $line"
-  original_line="$line"
 
-  # Process all placeholders in the line using a while loop
-  while [[ "$line" =~ \{[a-zA-Z0-9_]+\} ]]; do
-    # Detect si el placeholder viene con '~'
-    placeholder=$(echo "$line" | grep -oP "['~]?\{[a-zA-Z0-9_]+\}['~]?" | head -n1)
-    var_name=$(echo "$placeholder" | grep -oP "(?<=\{)[a-zA-Z0-9_]+(?=\})")
+  # Process placeholders until none remain
+  while [[ "$line" =~ \{[A-Za-z0-9_]+\} ]]; do
+    placeholder=""
+    is_quoted=false
+    has_tilde=false
+
+    if echo "$line" | grep -qP "'~\{[A-Za-z0-9_]+\}'"; then
+      placeholder=$(echo "$line" | grep -oP "'~\{[A-Za-z0-9_]+\}'" | head -n1)
+      is_quoted=true
+      has_tilde=true
+      inner=$(echo "$placeholder" | grep -oP "\{[A-Za-z0-9_]+\}")
+    elif echo "$line" | grep -qP "'\{[A-Za-z0-9_]+\}'"; then
+      placeholder=$(echo "$line" | grep -oP "'\{[A-Za-z0-9_]+\}'" | head -n1)
+      is_quoted=true
+      has_tilde=false
+      inner=$(echo "$placeholder" | grep -oP "\{[A-Za-z0-9_]+\}")
+    else
+      # No quoted placeholder → break to avoid touching raw {VAR}
+      break
+    fi
+
+    var_name=$(echo "$placeholder" | grep -oP "(?<=\{)[A-Za-z0-9_]+(?=\})")
 
     # Build the full variable name using the uppercase ref name (e.g., BRANCHNAME_VARNAME)
     if [[ -n "$GITHUB_REF_NAME" ]]; then
@@ -32,7 +48,7 @@ while IFS= read -r line || [ -n "$line" ]; do
 
     echo -e "\033[1;34m🔍 Looking for:\033[0m \033[1;32m'$full_var_name'\033[0m or \033[1;32m'$var_name'\033[0m"
 
-    # Try to resolve the variable value by checking secrets and vars in priority order
+    # Resolve the variable value by checking secrets and vars in priority order
     var_value=""
     if [[ -n "$full_var_name" ]]; then
       var_value=$(echo "$REPO_SECRETS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
@@ -48,27 +64,16 @@ while IFS= read -r line || [ -n "$line" ]; do
       exit 1
     fi
 
-    # If the placeholder hasn't '~', don't add quotes
-    if [[ "$placeholder" =~ "~" ]]; then
-      echo -e "Detected '~' escape for $var_name → using raw value without quotes"
+    # Quoted placeholder → choose quoting or raw depending on tilde
+    if $has_tilde; then
+      echo -e "\033[1;33m⚠️ Detected '~' escape for $var_name → using raw value without quotes\033[0m"
       processed_value="$var_value"
+      line=${line/$placeholder/$processed_value}
     else
-      # If the value is JSON, true/false, number or array, add quotes
-      if [[ "$ENV_FILE_OUT" == *.json ]]; then
-        processed_value="\"$var_value\""
-      elif ! [[ "$var_value" =~ ^[0-9]+$ ]] &&
-        [[ "$var_value" != "true" ]] &&
-        [[ "$var_value" != "false" ]] &&
-        ! [[ "$var_value" =~ ^\[[^]]*\]$ ]]; then
-        processed_value="'$var_value'"
-      else
-        processed_value="$var_value"
-      fi
+      processed_value="$var_value"
+      line=${line/$inner/$processed_value}
     fi
 
-    echo "Replacing '$placeholder' with '$processed_value'"
-
-    line=${line/$placeholder/$processed_value}
     echo "Line after replacement: $line"
   done
 
@@ -88,20 +93,15 @@ fi
 CLOUDFRONT_DIST_ID=""
 if [[ -n "$full_var_name" ]] && [[ "$full_var_name" != "CLOUDFRONT_DIST_ID" ]]; then
   CLOUDFRONT_DIST_ID=$(echo "$REPO_VARS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
-  # If not found, try REPO_SECRETS with the same full variable name
   [[ -z "$CLOUDFRONT_DIST_ID" ]] && CLOUDFRONT_DIST_ID=$(echo "$REPO_SECRETS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
 fi
 
-# If still not found, try REPO_SECRETS without the branch prefix
 [[ -z "$CLOUDFRONT_DIST_ID" ]] && CLOUDFRONT_DIST_ID=$(echo "$REPO_SECRETS" | jq -r --arg key "CLOUDFRONT_DIST_ID" '.[$key] // empty')
-# Finally, try REPO_VARS without the branch prefix
 [[ -z "$CLOUDFRONT_DIST_ID" ]] && CLOUDFRONT_DIST_ID=$(echo "$REPO_VARS" | jq -r --arg key "CLOUDFRONT_DIST_ID" '.[$key] // empty')
 
-# If the variable is still missing or null
 if [[ -z "$CLOUDFRONT_DIST_ID" ]] || [[ "$CLOUDFRONT_DIST_ID" == "null" ]]; then
   echo "CLOUDFRONT_DIST_ID not found in REPO_VARS or REPO_SECRETS."
   CLOUDFRONT_DIST_ID="null"
 fi
 
-# Exporting CloudFront Distribution
 echo "CLOUDFRONT_DIST_ID=$CLOUDFRONT_DIST_ID" >>"$GITHUB_OUTPUT"
