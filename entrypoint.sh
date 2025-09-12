@@ -70,8 +70,9 @@ while IFS= read -r line || [ -n "$line" ]; do
       processed_value="$var_value"
       line=${line/$placeholder/$processed_value}
     else
-      processed_value="$var_value"
-      line=${line/$inner/$processed_value}
+      echo "Replacing quoted placeholder for $var_name"
+      processed_value="'$var_value'"
+      line=${line/$placeholder/$processed_value}
     fi
 
     echo "Line after replacement: $line"
