@@ -57,7 +57,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       echo "Checked REPO_VARS[$var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)"
     fi
 
-    echo "🌟 Final resolved value for '$var_name': '$var_value'"
+    echo "Final resolved value for '$var_name': '$var_value'"
 
     # Fail the script if the variable could not be found
     if [[ -z "$var_value" ]] || [[ "$var_value" == "null" ]]; then
