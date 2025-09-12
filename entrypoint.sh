@@ -24,8 +24,6 @@ while IFS= read -r line || [ -n "$line" ]; do
     # Extract just the variable name from the placeholder
     var_name=$(echo "$placeholder" | grep -oP "(?<=\{)[a-zA-Z0-9_]+(?=\})")
 
-    echo -e "\033[1;34m🔍 Looking for:\033[0m \033[1;32m'$full_var_name'\033[0m or \033[1;32m'$var_name'\033[0m"
-
     # Build the full variable name using the uppercase ref name (e.g., BRANCHNAME_VARNAME)
     if [[ -n "$GITHUB_REF_NAME" ]]; then
       full_var_name="$(echo "${GITHUB_REF_NAME}" | tr '[:lower:]' '[:upper:]')_${var_name}"
@@ -33,28 +31,30 @@ while IFS= read -r line || [ -n "$line" ]; do
       full_var_name=""
     fi
 
+    echo -e "\033[1;34m🔍 Looking for:\033[0m \033[1;32m'$full_var_name'\033[0m or \033[1;32m'$var_name'\033[0m"
+
     # Try to resolve the variable value by checking secrets and vars in priority order
     var_value=""
 
     # Only try full_var_name if it's not empty
     if [[ -n "$full_var_name" ]]; then
       var_value=$(echo "$REPO_SECRETS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
-      echo "Checked REPO_SECRETS[$full_var_name]: '$var_value'"
+      echo "Checked REPO_SECRETS[$full_var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)"
     fi
 
     if [[ -z "$var_value" ]] && [[ -n "$full_var_name" ]]; then
       var_value=$(echo "$REPO_VARS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
-      echo "Checked REPO_VARS[$full_var_name]: '$var_value'"
+      echo "Checked REPO_VARS[$full_var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)"
     fi
 
     if [[ -z "$var_value" ]]; then
       var_value=$(echo "$REPO_SECRETS" | jq -r --arg key "$var_name" '.[$key] // empty')
-      echo "Checked REPO_SECRETS[$var_name]: '$var_value'"
+      echo "Checked REPO_SECRETS[$var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)"
     fi
 
     if [[ -z "$var_value" ]]; then
       var_value=$(echo "$REPO_VARS" | jq -r --arg key "$var_name" '.[$key] // empty')
-      echo "Checked REPO_VARS[$var_name]: '$var_value'"
+      echo "Checked REPO_VARS[$var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)"
     fi
 
     echo "Final resolved value for '$var_name': '$var_value'"
