@@ -18,10 +18,9 @@ while IFS= read -r line || [ -n "$line" ]; do
   original_line="$line"
 
   # Process all placeholders in the line using a while loop
-  while [[ "$line" =~ \'\{[a-zA-Z0-9_]+\}\' ]]; do
-    # Extract the first placeholder found
-    placeholder=$(echo "$line" | grep -oP "\'\{[a-zA-Z0-9_]+\}\'" | head -n1)
-    # Extract just the variable name from the placeholder
+  while [[ "$line" =~ \{[a-zA-Z0-9_]+\} ]]; do
+    # Detect si el placeholder viene con '~'
+    placeholder=$(echo "$line" | grep -oP "['~]?\{[a-zA-Z0-9_]+\}['~]?" | head -n1)
     var_name=$(echo "$placeholder" | grep -oP "(?<=\{)[a-zA-Z0-9_]+(?=\})")
 
     # Build the full variable name using the uppercase ref name (e.g., BRANCHNAME_VARNAME)
@@ -35,55 +34,41 @@ while IFS= read -r line || [ -n "$line" ]; do
 
     # Try to resolve the variable value by checking secrets and vars in priority order
     var_value=""
-
-    # Only try full_var_name if it's not empty
     if [[ -n "$full_var_name" ]]; then
       var_value=$(echo "$REPO_SECRETS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
-      echo "Checked REPO_SECRETS[$full_var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)"
+      [[ -z "$var_value" ]] && var_value=$(echo "$REPO_VARS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
     fi
-
-    if [[ -z "$var_value" ]] && [[ -n "$full_var_name" ]]; then
-      var_value=$(echo "$REPO_VARS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
-      echo "Checked REPO_VARS[$full_var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)"
-    fi
-
-    if [[ -z "$var_value" ]]; then
-      var_value=$(echo "$REPO_SECRETS" | jq -r --arg key "$var_name" '.[$key] // empty')
-      echo "Checked REPO_SECRETS[$var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)"
-    fi
-
-    if [[ -z "$var_value" ]]; then
-      var_value=$(echo "$REPO_VARS" | jq -r --arg key "$var_name" '.[$key] // empty')
-      echo "Checked REPO_VARS[$var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)"
-    fi
+    [[ -z "$var_value" ]] && var_value=$(echo "$REPO_SECRETS" | jq -r --arg key "$var_name" '.[$key] // empty')
+    [[ -z "$var_value" ]] && var_value=$(echo "$REPO_VARS" | jq -r --arg key "$var_name" '.[$key] // empty')
 
     echo "Final resolved value for '$var_name': '$var_value'"
 
-    # Fail the script if the variable could not be found
     if [[ -z "$var_value" ]] || [[ "$var_value" == "null" ]]; then
       echo "Error: $var_name not found in REPO_VARS or REPO_SECRETS."
       exit 1
     fi
 
-    # If the value is not a number, true, or false, wrap it in single quotes (unless it's JSON or has escape char)
-    processed_value="$var_value"
-    if [[ "$ENV_FILE_OUT" == *.json ]]; then
-      processed_value="\"$var_value\""
-    elif [[ $has_escape_char -gt 0 ]]; then
-      # Has escape character ~ - don't add quotes
+    # Si el placeholder tiene '~', no poner comillas
+    if [[ "$placeholder" =~ "~" ]]; then
+      echo -e "\033[1;33m⚠️  Detected '~' escape for $var_name → using raw value without quotes\033[0m"
       processed_value="$var_value"
-    elif ! [[ "$var_value" =~ ^[0-9]+$ ]] &&
-      [[ "$var_value" != "true" ]] &&
-      [[ "$var_value" != "false" ]] &&
-      ! [[ "$var_value" =~ ^\[[^]]*\]$ ]]; then
-      processed_value="'$var_value'"
+    else
+      # Si el valor es JSON, true/false, número, o array → se deja tal cual
+      if [[ "$ENV_FILE_OUT" == *.json ]]; then
+        processed_value="\"$var_value\""
+      elif ! [[ "$var_value" =~ ^[0-9]+$ ]] &&
+        [[ "$var_value" != "true" ]] &&
+        [[ "$var_value" != "false" ]] &&
+        ! [[ "$var_value" =~ ^\[[^]]*\]$ ]]; then
+        processed_value="'$var_value'"
+      else
+        processed_value="$var_value"
+      fi
     fi
 
     echo "Replacing '$placeholder' with '$processed_value'"
 
-    # Replace THIS SPECIFIC placeholder in the line with the resolved value
     line=${line/$placeholder/$processed_value}
-
     echo "Line after replacement: $line"
   done
 
