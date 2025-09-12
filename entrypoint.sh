@@ -57,7 +57,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       echo "Checked REPO_VARS[$var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)"
     fi
 
-    echo "Final resolved value for '$var_name': '$var_value'"
+    echo "🌟 Final resolved value for '$var_name': '$var_value'"
 
     # Fail the script if the variable could not be found
     if [[ -z "$var_value" ]] || [[ "$var_value" == "null" ]]; then
@@ -65,10 +65,13 @@ while IFS= read -r line || [ -n "$line" ]; do
       exit 1
     fi
 
-    # If the value is not a number, true, or false, wrap it in single quotes (unless it's JSON)
+    # If the value is not a number, true, or false, wrap it in single quotes (unless it's JSON or has escape char)
     processed_value="$var_value"
     if [[ "$ENV_FILE_OUT" == *.json ]]; then
       processed_value="\"$var_value\""
+    elif [[ $has_escape_char -gt 0 ]]; then
+      # Has escape character ~ - don't add quotes
+      processed_value="$var_value"
     elif ! [[ "$var_value" =~ ^[0-9]+$ ]] &&
       [[ "$var_value" != "true" ]] &&
       [[ "$var_value" != "false" ]] &&
