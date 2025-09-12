@@ -48,12 +48,12 @@ while IFS= read -r line || [ -n "$line" ]; do
       exit 1
     fi
 
-    # Si el placeholder tiene '~', no poner comillas
+    # If the placeholder hasn't '~', don't add quotes
     if [[ "$placeholder" =~ "~" ]]; then
-      echo -e "\033[1;33m⚠️  Detected '~' escape for $var_name → using raw value without quotes\033[0m"
+      echo -e "Detected '~' escape for $var_name → using raw value without quotes"
       processed_value="$var_value"
     else
-      # Si el valor es JSON, true/false, número, o array → se deja tal cual
+      # If the value is JSON, true/false, number or array, add quotes
       if [[ "$ENV_FILE_OUT" == *.json ]]; then
         processed_value="\"$var_value\""
       elif ! [[ "$var_value" =~ ^[0-9]+$ ]] &&
