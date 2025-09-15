@@ -3,7 +3,7 @@ set -e
 
 findVarName() {
   local line="$1"
-  echo "Processing line: $line"
+  echo "Processing line: $line" >&2
 
   # Extract the current placeholder found
   local placeholder=$(echo "$line" | grep -oP "'~?\{[a-zA-Z0-9_-]+\}'" | head -n1)
@@ -29,34 +29,34 @@ findVarValue() {
   # Look for full_var_name (branch + var) in repo secrets
   if [[ -n "$full_var_name" ]]; then
     var_value=$(echo "$REPO_SECRETS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
-    echo "Checked REPO_SECRETS[$full_var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)"
+    echo "Checked REPO_SECRETS[$full_var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)" >&2
   fi
 
   # Case secrets doesn't have full_var_name, find it in repo vars
   if [[ -z "$var_value" ]] && [[ -n "$full_var_name" ]]; then
     var_value=$(echo "$REPO_VARS" | jq -r --arg key "$full_var_name" '.[$key] // empty')
-    echo "Checked REPO_VARS[$full_var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)"
+    echo "Checked REPO_VARS[$full_var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)" >&2
   fi
 
   # Case full_var_name are not in repo secrets or vars, let's find the variable without prefix in repo secrets
   if [[ -z "$var_value" ]]; then
     var_value=$(echo "$REPO_SECRETS" | jq -r --arg key "$var_name" '.[$key] // empty')
-    echo "Checked REPO_SECRETS[$var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)"
+    echo "Checked REPO_SECRETS[$var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)" >&2
   fi
 
   # Case var_name are not in repo secrets, let's find it in repo vars
   if [[ -z "$var_value" ]]; then
     var_value=$(echo "$REPO_VARS" | jq -r --arg key "$var_name" '.[$key] // empty')
-    echo "Checked REPO_VARS[$var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)"
+    echo "Checked REPO_VARS[$var_name]: $(if [[ -n "$var_value" ]]; then echo "'$var_value'"; else echo "''"; fi)" >&2
   fi
 
   # If var_name doesn't exists, throw error and stop de execution
   if [[ -z "$var_value" ]] || [[ "$var_value" == "null" ]]; then
-    echo -e "\033[1;31m❌ Error:\033[0m \033[1;31m'$var_name'\033[0m or \033[1;31m'$full_var_name'\033[0m not found in REPO_VARS or REPO_SECRETS."
+    echo -e "\033[1;31m❌ Error:\033[0m \033[1;31m'$var_name'\033[0m or \033[1;31m'$full_var_name'\033[0m not found in REPO_VARS or REPO_SECRETS." >&2
     if [[ "$bypass_err" == "false" ]]; then
       exit 1
     else
-      echo "⚠️ The execution will continue (bypass_err=true)"
+      echo "⚠️ The execution will continue (bypass_err=true)" >&2
       echo "null"
       return 0
     fi
