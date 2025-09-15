@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0]
+
+### Changed
+- Inputs in `action.yml` are now uppercase (`ENV_FILE_IN`, `ENV_FILE_OUT`, `REPO_VARS`, `REPO_SECRETS`) for consistency with environment variables.
+
+### Added
+- Full refactor of `entrypoint.sh` into modular functions:
+  - `findVarName`, `findVarValue`, `formatValue`, `processFile`, `processCloudFront`.
+- Support for `~{VAR}` placeholders: values inserted **without quotes**.
+- Detailed logging of resolution process (checked secrets/vars, replacements).
+- Optional error bypass for `CLOUDFRONT_DIST_ID` when not defined.
+
+### Improved
+- Safer JSON formatting using `jq` instead of manual quoting.
+- Enhanced array detection and preservation.
+- Better handling of branch names containing `/` (with warning).
+
 ## [1.0.7]
 
 ### Added
@@ -41,7 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initialized action
 
-[Unreleased]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.7...HEAD
+[Unreleased]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.7...v1.2.0
 [1.0.7]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.5...v1.0.7
 [1.0.5]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.1...v1.0.5
 [1.0.1]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.0...v1.0.1

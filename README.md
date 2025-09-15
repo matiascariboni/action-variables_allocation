@@ -56,7 +56,7 @@ jobs:
 
       - name: Variable allocation & CLOUDFRONT_DIST_ID
         id: variables_allocation
-        uses: matiascariboni/action-variables_allocation@v1.0.5
+        uses: matiascariboni/action-variables_allocation@v1.2.0
         with:
           env_file_in: ${{ env.ENV_FILE_IN }}
           env_file_out: ${{ env.ENV_FILE_OUT }}
@@ -100,8 +100,11 @@ jobs:
 ## ⚖️ Special rules
 
 * Lines starting with `//` are ignored (treated as comments)
-* If a value is not found, the step fails explicitly
-* If the value is not a number, `true`, or `false`, it's wrapped in single quotes (`'value'`)
+* If a value is not found, the step fails explicitly (except `CLOUDFRONT_DIST_ID`, which is optional)
+* If the output file ends with `.json`, values are always written as JSON strings
+* Prefix `~` inside a placeholder (e.g., `'~{VAR}'`) means the value will be inserted **without quotes**
+* Arrays like `[1,2,3]` are detected and preserved as raw values
+* If the value is not a number, boolean, array, or prefixed with `~`, it is wrapped in single quotes (`'value'`)
 
 ---
 
