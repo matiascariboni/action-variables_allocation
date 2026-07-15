@@ -10,9 +10,12 @@ findVarName() {
   # Extract just the variable name from the placeholder
   local var_name=$(echo "$placeholder" | grep -oP "(?<=\{)[a-zA-Z0-9_-]+(?=\})")
 
-  # Build the full variable name using the uppercase ref name (e.g., BRANCHNAME_VARNAME)
-  if [[ -n "$GITHUB_REF_NAME" ]]; then
-    local full_var_name="$(echo "${GITHUB_REF_NAME}" | tr '[:lower:]' '[:upper:]')_${var_name}"
+  # Build the full variable name using the uppercase environment name (e.g., ENVNAME_VARNAME).
+  # Only the last "/"-separated segment of GITHUB_REF_NAME is used as the environment name,
+  # so "deploy/preprod" -> "preprod" and "main" (no "/") -> "main".
+  local env_name="${GITHUB_REF_NAME##*/}"
+  if [[ -n "$env_name" ]]; then
+    local full_var_name="$(echo "${env_name}" | tr '[:lower:]' '[:upper:]')_${var_name}"
   else
     local full_var_name=""
   fi
@@ -88,10 +91,6 @@ formatValue() {
 processFile() {
   # Show GITHUB_REF_NAME value
   echo "GITHUB_REF_NAME='$GITHUB_REF_NAME'"
-
-  if [[ "$GITHUB_REF_NAME" == *"/"* ]]; then
-  echo -e "\033[1;33m⚠️  Warning:\033[0m Branch name contains '/' -> prefixed environment variables will not work with this version of 'variables_allocation'. Execution will continue."
-  fi
 
   echo "Available REPO_SECRETS keys:"
   echo "$REPO_SECRETS" | jq -r 'keys[]'

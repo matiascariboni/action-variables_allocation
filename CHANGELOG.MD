@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2]
+
+### Fixed
+- Environment-prefixed variables (e.g. `HOST_DATABASE`, `PORT_DATABASE`,
+  `NOTIFICATIONS_SERVICE_URL`) were never resolved on ref names containing a `/`
+  (e.g. `deploy/preprod`, `deploy/prod`). Root cause: `findVarName()` built the
+  prefix from the **entire** `GITHUB_REF_NAME`, uppercased as-is, so
+  `deploy/preprod` produced the literal lookup key `DEPLOY/PREPROD_HOST_DATABASE`
+  (with a `/` inside the key) — matching neither the real key in
+  `REPO_VARS`/`REPO_SECRETS` (`PREPROD_HOST_DATABASE`) nor the unprefixed fallback
+  (`HOST_DATABASE`), so it always fell through to the "not found" error.
+  Confirmed via `git log -p --follow -- entrypoint.sh`: this prefix formula was
+  unchanged since the very first commit (`v1.0.0`) — **not a regression** from the
+  v1.2.1 `&` fix. It was simply never exercised end-to-end on `deploy/*` refs
+  before, because the unrelated infinite-loop bug fixed in v1.2.1 kept those runs
+  from completing.
+  `findVarName()` now derives the prefix from only the last `/`-separated segment
+  of `GITHUB_REF_NAME` (e.g. `deploy/preprod` -> `preprod`, `main` -> `main`
+  unchanged), joined with `_` as before.
+- Removed the "Branch name contains '/'" warning in `processFile()`, since
+  ref names with `/` are now handled correctly instead of merely flagged.
+
 ## [1.2.1]
 
 ### Fixed
@@ -72,7 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initialized action
 
-[Unreleased]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.7...v1.2.0
 [1.0.7]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.5...v1.0.7

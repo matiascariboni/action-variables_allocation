@@ -29,13 +29,14 @@ run_entrypoint() {
   local env_out="$2"
   local repo_vars="$3"
   local repo_secrets="$4"
+  local ref_name="${5:-main}"
 
   LC_ALL="C.utf8" \
   ENV_FILE_IN="$env_in" \
   ENV_FILE_OUT="$env_out" \
   REPO_VARS="$repo_vars" \
   REPO_SECRETS="$repo_secrets" \
-  GITHUB_REF_NAME="main" \
+  GITHUB_REF_NAME="$ref_name" \
   GITHUB_OUTPUT="$(mktemp)" \
     timeout 10 bash "$REPO_ROOT/entrypoint.sh" >/dev/null 2>&1
   return $?
@@ -120,6 +121,26 @@ start=$(date +%s 2>/dev/null || echo 0)
 run_entrypoint "$ENV_IN" "$ENV_OUT" "$REPO_VARS" "$REPO_SECRETS"
 rc=$?
 assert_eq "no infinite loop / timeout for '&' value" "0" "$rc"
+
+# --- Test 9: environment-prefixed lookup for "deploy/preprod" -> "PREPROD_" ---
+ENV_IN="$WORKDIR/t9.env.in"
+ENV_OUT="$WORKDIR/t9.env.out"
+REPO_VARS_ENV='{"PORT":"3000","PREPROD_HOST_DATABASE":"db.preprod.internal"}'
+printf "HOST_DATABASE='{HOST_DATABASE}'\n" > "$ENV_IN"
+run_entrypoint "$ENV_IN" "$ENV_OUT" "$REPO_VARS_ENV" "$REPO_SECRETS" "deploy/preprod"
+assert_eq "'deploy/preprod' resolves via 'PREPROD_' prefix" \
+  "HOST_DATABASE='db.preprod.internal'" \
+  "$(cat "$ENV_OUT" 2>/dev/null)"
+
+# --- Test 10: environment-prefixed lookup for "deploy/prod" -> "PROD_" ---
+ENV_IN="$WORKDIR/t10.env.in"
+ENV_OUT="$WORKDIR/t10.env.out"
+REPO_VARS_ENV='{"PORT":"3000","PROD_HOST_DATABASE":"db.prod.internal"}'
+printf "HOST_DATABASE='{HOST_DATABASE}'\n" > "$ENV_IN"
+run_entrypoint "$ENV_IN" "$ENV_OUT" "$REPO_VARS_ENV" "$REPO_SECRETS" "deploy/prod"
+assert_eq "'deploy/prod' resolves via 'PROD_' prefix" \
+  "HOST_DATABASE='db.prod.internal'" \
+  "$(cat "$ENV_OUT" 2>/dev/null)"
 
 echo ""
 echo "----------------------------------------"
