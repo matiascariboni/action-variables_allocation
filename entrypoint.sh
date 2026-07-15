@@ -104,21 +104,35 @@ processFile() {
   # Loop through each line of the input env file
   while IFS= read -r line || [ -n "$line" ]; do
   # Process all placeholders in the line using a while loop
+    local placeholder_iterations=0
     while [[ "$line" =~ \'~?\{[a-zA-Z0-9_-]+\}\' ]]; do
-      read var_name full_var_name placeholder <<< "$(findVarName "$line")"
+      placeholder_iterations=$((placeholder_iterations + 1))
+      if [[ "$placeholder_iterations" -gt 50 ]]; then
+        echo -e "\033[1;31m❌ Error:\033[0m Too many placeholder substitutions on a single line (possible infinite loop). Line: $line" >&2
+        exit 1
+      fi
+
+      read -r var_name full_var_name placeholder <<< "$(findVarName "$line")"
 
       echo -e "\033[1;34m🔍 Looking for:\033[0m \033[1;32m'$full_var_name'\033[0m or \033[1;32m'$var_name'\033[0m"
 
-      read var_value <<< "$(findVarValue "$var_name" "$full_var_name")"
+      read -r var_value <<< "$(findVarValue "$var_name" "$full_var_name")"
 
       echo -e "\033[1;32m✅ Final resolved value for '\033[1;36m$var_name\033[1;32m': '\033[1;33m$var_value\033[1;32m'\033[0m"
 
-      read processed_value <<< "$(formatValue "$placeholder" "$var_value")"
+      read -r processed_value <<< "$(formatValue "$placeholder" "$var_value")"
 
       echo "Replacing '$placeholder' with '$processed_value'"
 
-      # Replace THIS SPECIFIC placeholder in the line with the resolved value
-      line=${line/$placeholder/$processed_value}
+      # Replace THIS SPECIFIC placeholder in the line with the resolved value.
+      # Literal substring replacement (not ${line/pattern/replacement}): bash's pattern
+      # substitution treats an unescaped '&' in the replacement text as "the whole match",
+      # which reinserts the placeholder and grows the line forever when a secret contains '&'.
+      if [[ "$line" == *"$placeholder"* ]]; then
+        prefix=${line%%"$placeholder"*}
+        suffix=${line#*"$placeholder"}
+        line="$prefix$processed_value$suffix"
+      fi
 
       echo "Line after replacement: $line"
     done
@@ -131,11 +145,11 @@ processFile() {
 processCloudFront() {
   local line="'~{CLOUDFRONT_DIST_ID}'"
 
-  read var_name full_var_name placeholder <<< "$(findVarName "$line")"
+  read -r var_name full_var_name placeholder <<< "$(findVarName "$line")"
 
   echo -e "\033[1;34m🔍 Looking for:\033[0m \033[1;32m'$full_var_name'\033[0m or \033[1;32m'$var_name'\033[0m"
 
-  read var_value <<< "$(findVarValue "$var_name" "$full_var_name" "true")"
+  read -r var_value <<< "$(findVarValue "$var_name" "$full_var_name" "true")"
 
   if [[ "$var_value" == "null" ]]; then
     echo "CLOUDFRONT_DIST_ID not found. Finishing..."
@@ -148,5 +162,7 @@ processCloudFront() {
   echo "$var_name=$var_value" >>"$GITHUB_OUTPUT"
 }
 
-processFile
-processCloudFront
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  processFile
+  processCloudFront
+fi

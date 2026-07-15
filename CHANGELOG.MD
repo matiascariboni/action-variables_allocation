@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1]
+
+### Fixed
+- Infinite loop / unbounded line growth in `entrypoint.sh` when a var/secret value contained
+  an `&` character. The replacement `line=${line/$placeholder/$processed_value}` used Bash's
+  pattern-substitution expansion, which treats an unescaped `&` in the replacement text as
+  "the whole matched text" (ksh-inherited behavior), reinserting the placeholder and growing
+  the line on every pass of the placeholder-resolution loop. Replaced with a literal
+  prefix/suffix substring replacement that never interprets any character specially.
+- `read` calls without `-r` were silently stripping backslashes (`\`) from resolved values.
+  Added `-r` to all `read` invocations in `entrypoint.sh`.
+- Added an iteration cap (50) on the per-line placeholder-resolution loop as a safeguard
+  against any future infinite loop of this kind.
+
 ## [1.2.0]
 
 ### Changed
@@ -58,7 +72,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initialized action
 
-[Unreleased]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.7...v1.2.0
 [1.0.7]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.5...v1.0.7
 [1.0.5]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.1...v1.0.5

@@ -105,6 +105,7 @@ jobs:
 * Prefix `~` inside a placeholder (e.g., `'~{VAR}'`) means the value will be inserted **without quotes**
 * Arrays like `[1,2,3]` are detected and preserved as raw values
 * If the value is not a number, boolean, array, or prefixed with `~`, it is wrapped in single quotes (`'value'`)
+* Values are inserted literally: characters like `&`, `/`, `\`, and quotes are preserved as-is and never treated as special replacement syntax
 
 ---
 
