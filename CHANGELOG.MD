@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0]
+
 ### Added
 - New optional `CLOUDFRONT` input (default: `false`) in `action.yml` to control whether
   `processCloudFront()` runs at all. When unset or `false`, `entrypoint.sh` skips
@@ -99,7 +101,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initialized action
 
-[Unreleased]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.2...HEAD
+[Unreleased]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.0.7...v1.2.0

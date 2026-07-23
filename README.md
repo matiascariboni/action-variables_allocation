@@ -56,7 +56,7 @@ jobs:
 
       - name: Variable allocation & CLOUDFRONT_DIST_ID
         id: variables_allocation
-        uses: matiascariboni/action-variables_allocation@v1.2.0
+        uses: matiascariboni/action-variables_allocation@v1.3.0
         with:
           env_file_in: ${{ env.ENV_FILE_IN }}
           env_file_out: ${{ env.ENV_FILE_OUT }}
