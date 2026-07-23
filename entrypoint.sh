@@ -142,6 +142,11 @@ processFile() {
 }
 
 processCloudFront() {
+  if [[ "${CLOUDFRONT:-false}" != "true" ]]; then
+    echo "CLOUDFRONT is disabled (CLOUDFRONT=${CLOUDFRONT:-false}). Skipping CloudFront resolution."
+    return 0
+  fi
+
   local line="'~{CLOUDFRONT_DIST_ID}'"
 
   read -r var_name full_var_name placeholder <<< "$(findVarName "$line")"

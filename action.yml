@@ -13,6 +13,10 @@ inputs:
   REPO_SECRETS:
     description: "Environment secrets allocated on current repo"
     required: true
+  CLOUDFRONT:
+    description: "Enable resolving CLOUDFRONT_DIST_ID from vars/secrets"
+    required: false
+    default: "false"
 outputs:
   CLOUDFRONT_DIST_ID:
     description: "Resolved CloudFront distribution ID from vars or secrets"
@@ -30,3 +34,4 @@ runs:
         ENV_FILE_OUT: ${{ inputs.ENV_FILE_OUT }}
         REPO_VARS: ${{ inputs.REPO_VARS}}
         REPO_SECRETS: ${{ inputs.REPO_SECRETS}}
+        CLOUDFRONT: ${{ inputs.CLOUDFRONT }}

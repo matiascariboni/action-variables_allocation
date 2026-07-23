@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- New optional `CLOUDFRONT` input (default: `false`) in `action.yml` to control whether
+  `processCloudFront()` runs at all. When unset or `false`, `entrypoint.sh` skips
+  CloudFront distribution ID resolution entirely instead of always attempting it.
+
 ## [1.2.2]
 
 ### Fixed

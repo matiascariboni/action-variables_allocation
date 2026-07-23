@@ -77,6 +77,7 @@ jobs:
 | `env_file_out` | Path to save the output file with resolved values | ✅ Yes    |
 | `repo_vars`    | Variables allocated on current repo               | ✅ Yes    |
 | `repo_secrets` | Variables allocated on current secret             | ✅ Yes    |
+| `cloudfront`   | Enable resolving `CLOUDFRONT_DIST_ID` from `vars`/`secrets` (default: `false`) | ❌ No |
 
 ---
 
@@ -101,6 +102,7 @@ jobs:
 
 * Lines starting with `//` are ignored (treated as comments)
 * If a value is not found, the step fails explicitly (except `CLOUDFRONT_DIST_ID`, which is optional)
+* `CLOUDFRONT_DIST_ID` resolution is opt-in: it only runs when the `cloudfront` input is set to `true`. When disabled (the default), the step is skipped entirely and no output is set
 * If the output file ends with `.json`, values are always written as JSON strings
 * Prefix `~` inside a placeholder (e.g., `'~{VAR}'`) means the value will be inserted **without quotes**
 * Arrays like `[1,2,3]` are detected and preserved as raw values
