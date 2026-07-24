@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-07-24
+
+### Changed
+- **Breaking:** Replaced the `ENV_FILE_IN`/`ENV_FILE_OUT` inputs with a single `ENV_FILES`
+  input: a JSON array of `[input, output]` file path pairs (e.g.
+  `[["./.env.prod", "./.env"], ["./.npmrc.template", "./.npmrc"]]`). Each pair is
+  processed sequentially, so a single action run can now generate multiple resolved
+  files instead of only one.
+- `entrypoint.sh`: `processFile()` and `formatValue()` now take the input/output file
+  paths as parameters instead of reading the global `ENV_FILE_IN`/`ENV_FILE_OUT`
+  environment variables. A new `parseEnvFiles()` validates `ENV_FILES` (valid JSON
+  array, each element a 2-string pair) and fails with a clear error (indicating the
+  offending index) if malformed. `processCloudFront()` still runs exactly once, after
+  all pairs are processed, unchanged.
+
 ## [1.3.0]
 
 ### Added
@@ -101,7 +116,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initialized action
 
-[Unreleased]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/matiascariboni/action-variables_allocation/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.3.0...v2.0.0
 [1.3.0]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/matiascariboni/action-variables_allocation/compare/v1.2.0...v1.2.1

@@ -31,9 +31,18 @@ run_entrypoint() {
   local repo_secrets="$4"
   local ref_name="${5:-main}"
 
+  run_entrypoint_files "[[\"$env_in\",\"$env_out\"]]" "$repo_vars" "$repo_secrets" "$ref_name"
+  return $?
+}
+
+run_entrypoint_files() {
+  local env_files="$1"
+  local repo_vars="$2"
+  local repo_secrets="$3"
+  local ref_name="${4:-main}"
+
   LC_ALL="C.utf8" \
-  ENV_FILE_IN="$env_in" \
-  ENV_FILE_OUT="$env_out" \
+  ENV_FILES="$env_files" \
   REPO_VARS="$repo_vars" \
   REPO_SECRETS="$repo_secrets" \
   GITHUB_REF_NAME="$ref_name" \
@@ -141,6 +150,35 @@ run_entrypoint "$ENV_IN" "$ENV_OUT" "$REPO_VARS_ENV" "$REPO_SECRETS" "deploy/pro
 assert_eq "'deploy/prod' resolves via 'PROD_' prefix" \
   "HOST_DATABASE='db.prod.internal'" \
   "$(cat "$ENV_OUT" 2>/dev/null)"
+
+# --- Test 11: multiple pairs in ENV_FILES processed sequentially ---
+ENV_IN_A="$WORKDIR/t11a.env.in"
+ENV_OUT_A="$WORKDIR/t11a.env.out"
+ENV_IN_B="$WORKDIR/t11b.env.in"
+ENV_OUT_B="$WORKDIR/t11b.env.out"
+printf "PORT='{PORT}'\n" > "$ENV_IN_A"
+printf "WORKER_WAKE_PORT='{WORKER_WAKE_PORT}'\n" > "$ENV_IN_B"
+run_entrypoint_files "[[\"$ENV_IN_A\",\"$ENV_OUT_A\"],[\"$ENV_IN_B\",\"$ENV_OUT_B\"]]" "$REPO_VARS" "$REPO_SECRETS"
+rc=$?
+assert_eq "exit code for multiple ENV_FILES pairs" "0" "$rc"
+assert_eq "first pair output written correctly" \
+  "PORT=3000" \
+  "$(cat "$ENV_OUT_A" 2>/dev/null)"
+assert_eq "second pair output written correctly" \
+  "WORKER_WAKE_PORT=4000" \
+  "$(cat "$ENV_OUT_B" 2>/dev/null)"
+
+# --- Test 12: ENV_FILES with invalid JSON must fail ---
+run_entrypoint_files "not-json" "$REPO_VARS" "$REPO_SECRETS"
+rc=$?
+assert_eq "invalid JSON ENV_FILES fails" "1" "$rc"
+
+# --- Test 13: ENV_FILES pair with wrong element count must fail ---
+ENV_IN_C="$WORKDIR/t13.env.in"
+printf "PORT='{PORT}'\n" > "$ENV_IN_C"
+run_entrypoint_files "[[\"$ENV_IN_C\"]]" "$REPO_VARS" "$REPO_SECRETS"
+rc=$?
+assert_eq "ENV_FILES pair missing output file fails" "1" "$rc"
 
 echo ""
 echo "----------------------------------------"

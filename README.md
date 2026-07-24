@@ -1,6 +1,6 @@
 # 📦 Variables Allocation
 
-This GitHub Action replaces environment variable placeholders defined in an input file (`ENV_FILE_IN`) using repository `secrets` and `vars`. It also extracts the CloudFront distribution ID (`CLOUDFRONT_DIST_ID`) and outputs it for use in subsequent steps.
+This GitHub Action replaces environment variable placeholders defined in one or more input files (`ENV_FILES`) using repository `secrets` and `vars`. It also extracts the CloudFront distribution ID (`CLOUDFRONT_DIST_ID`) and outputs it for use in subsequent steps.
 
 > Ideal for AWS deployment workflows, environment-based configuration, and secrets-driven `.env` generation.
 
@@ -17,7 +17,7 @@ This GitHub Action replaces environment variable placeholders defined in an inpu
 
 ## 📂 Expected Input Format
 
-The input file (`ENV_FILE_IN`) should contain lines with variables in this format:
+Each input file listed in `ENV_FILES` should contain lines with variables in this format:
 
 ```env
 API_KEY='{API_KEY}'
@@ -30,7 +30,7 @@ Braces (`'{...}'`) will be replaced with actual values from GitHub repository se
 
 ## 🧠 Usage
 
-### 1. Add a template file `.env.in`:
+### 1. Add one or more template files, e.g. `.env.prod` and `.npmrc.template`:
 
 ```env
 API_URL='{API_URL}'
@@ -56,10 +56,13 @@ jobs:
 
       - name: Variable allocation & CLOUDFRONT_DIST_ID
         id: variables_allocation
-        uses: matiascariboni/action-variables_allocation@v1.3.0
+        uses: matiascariboni/action-variables_allocation@v2.0.0
         with:
-          env_file_in: ${{ env.ENV_FILE_IN }}
-          env_file_out: ${{ env.ENV_FILE_OUT }}
+          env_files: |
+            [
+              ["./.env.prod", "./.env"],
+              ["./.npmrc.template", "./.npmrc"]
+            ]
           repo_vars: ${{ toJson(vars) }}
           repo_secrets: ${{ toJson(secrets) }}
 
@@ -67,14 +70,15 @@ jobs:
         run: echo "CloudFront ID: ${{ steps.variables_allocation.outputs.CLOUDFRONT_DIST_ID }}"
 ```
 
+Each pair in `env_files` is processed sequentially: position `0` is the input template, position `1` is the resolved output file. Add as many pairs as needed to generate multiple files in a single run.
+
 ---
 
 ## 👇🏻 Inputs
 
 | Name           | Description                                       | Required  |
 | -------------- | ------------------------------------------------- | --------- |
-| `env_file_in`  | Path to input file with `'{}'`-style placeholders | ✅ Yes    |
-| `env_file_out` | Path to save the output file with resolved values | ✅ Yes    |
+| `env_files`    | JSON array of `[input, output]` file path pairs, e.g. `[["./.env.prod", "./.env"], ["./.npmrc.template", "./.npmrc"]]`. Processed sequentially. | ✅ Yes    |
 | `repo_vars`    | Variables allocated on current repo               | ✅ Yes    |
 | `repo_secrets` | Variables allocated on current secret             | ✅ Yes    |
 | `cloudfront`   | Enable resolving `CLOUDFRONT_DIST_ID` from `vars`/`secrets` (default: `false`) | ❌ No |

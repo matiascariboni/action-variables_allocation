@@ -1,11 +1,8 @@
 name: "Variables Allocation"
 description: "Replace placeholders on an .env template file to a functional env file ready to use on production"
 inputs:
-  ENV_FILE_IN:
-    description: "Path to the .env file template"
-    required: true
-  ENV_FILE_OUT:
-    description: "Path to the .env file processed"
+  ENV_FILES:
+    description: 'JSON array of [input, output] file path pairs, e.g. [["./.env.prod", "./.env"], ["./.npmrc.template", "./.npmrc"]]. Each pair is processed sequentially.'
     required: true
   REPO_VARS:
     description: "Environment variables allocated on current repo"
@@ -30,8 +27,7 @@ runs:
         chmod +x ${{ github.action_path }}/entrypoint.sh
         ${{ github.action_path }}/entrypoint.sh
       env:
-        ENV_FILE_IN: ${{ inputs.ENV_FILE_IN }}
-        ENV_FILE_OUT: ${{ inputs.ENV_FILE_OUT }}
+        ENV_FILES: ${{ inputs.ENV_FILES }}
         REPO_VARS: ${{ inputs.REPO_VARS}}
         REPO_SECRETS: ${{ inputs.REPO_SECRETS}}
         CLOUDFRONT: ${{ inputs.CLOUDFRONT }}

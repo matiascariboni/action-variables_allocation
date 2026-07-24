@@ -71,9 +71,10 @@ findVarValue() {
 formatValue() {
   local placeholder=$1
   local var_value=$2
+  local env_file_out=$3
 
   # If the file it's a json, add double quotes
-  if [[ "$ENV_FILE_OUT" == *.json ]]; then
+  if [[ "$env_file_out" == *.json ]]; then
     jq -Rn --arg v "$var_value" '$v'
   # If the value isn't an int number, boolean or don't have "~" then add single quotes
   elif ! [[ "$var_value" =~ ^-?[0-9]+([.][0-9]+)?$ ]] &&
@@ -89,6 +90,11 @@ formatValue() {
 }
 
 processFile() {
+  local env_file_in="$1"
+  local env_file_out="$2"
+
+  echo "Processing '$env_file_in' -> '$env_file_out'"
+
   # Show GITHUB_REF_NAME value
   echo "GITHUB_REF_NAME='$GITHUB_REF_NAME'"
 
@@ -98,7 +104,7 @@ processFile() {
   echo "$REPO_VARS" | jq -r 'keys[]'
 
   # Erase or create the env file out
-  >"$ENV_FILE_OUT"
+  >"$env_file_out"
 
   # Loop through each line of the input env file
   while IFS= read -r line || [ -n "$line" ]; do
@@ -119,7 +125,7 @@ processFile() {
 
       echo -e "\033[1;32m✅ Final resolved value for '\033[1;36m$var_name\033[1;32m': '\033[1;33m$var_value\033[1;32m'\033[0m"
 
-      read -r processed_value <<< "$(formatValue "$placeholder" "$var_value")"
+      read -r processed_value <<< "$(formatValue "$placeholder" "$var_value" "$env_file_out")"
 
       echo "Replacing '$placeholder' with '$processed_value'"
 
@@ -137,8 +143,8 @@ processFile() {
     done
 
     # Write the processed line to the output env file
-    echo "$line" >>"$ENV_FILE_OUT"
-  done <"$ENV_FILE_IN"
+    echo "$line" >>"$env_file_out"
+  done <"$env_file_in"
 }
 
 processCloudFront() {
@@ -166,7 +172,34 @@ processCloudFront() {
   echo "$var_name=$var_value" >>"$GITHUB_OUTPUT"
 }
 
+parseEnvFiles() {
+  if ! echo "$ENV_FILES" | jq -e 'type == "array"' >/dev/null 2>&1; then
+    echo -e "\033[1;31m❌ Error:\033[0m ENV_FILES must be a JSON array of [input, output] pairs. Got: $ENV_FILES" >&2
+    exit 1
+  fi
+
+  local count
+  count=$(echo "$ENV_FILES" | jq 'length')
+
+  local i
+  for ((i = 0; i < count; i++)); do
+    local pair
+    pair=$(echo "$ENV_FILES" | jq -c ".[$i]")
+
+    if ! echo "$pair" | jq -e 'type == "array" and length == 2 and (.[0] | type == "string") and (.[1] | type == "string")' >/dev/null 2>&1; then
+      echo -e "\033[1;31m❌ Error:\033[0m ENV_FILES[$i] must be a [input, output] pair of two strings. Got: $pair" >&2
+      exit 1
+    fi
+
+    local env_file_in env_file_out
+    env_file_in=$(echo "$pair" | jq -r '.[0]')
+    env_file_out=$(echo "$pair" | jq -r '.[1]')
+
+    processFile "$env_file_in" "$env_file_out"
+  done
+}
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  processFile
+  parseEnvFiles
   processCloudFront
 fi
