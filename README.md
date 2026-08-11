@@ -58,19 +58,19 @@ jobs:
         id: variables_allocation
         uses: matiascariboni/action-variables_allocation@v2.0.0
         with:
-          env_files: |
+          ENV_FILES: |
             [
               ["./.env.prod", "./.env"],
               ["./.npmrc.template", "./.npmrc"]
             ]
-          repo_vars: ${{ toJson(vars) }}
-          repo_secrets: ${{ toJson(secrets) }}
+          REPO_VARS: ${{ toJson(vars) }}
+          REPO_SECRETS: ${{ toJson(secrets) }}
 
       - name: Print output
         run: echo "CloudFront ID: ${{ steps.variables_allocation.outputs.CLOUDFRONT_DIST_ID }}"
 ```
 
-Each pair in `env_files` is processed sequentially: position `0` is the input template, position `1` is the resolved output file. Add as many pairs as needed to generate multiple files in a single run.
+Each pair in `ENV_FILES` is processed sequentially: position `0` is the input template, position `1` is the resolved output file. Add as many pairs as needed to generate multiple files in a single run.
 
 ---
 
@@ -78,10 +78,10 @@ Each pair in `env_files` is processed sequentially: position `0` is the input te
 
 | Name           | Description                                       | Required  |
 | -------------- | ------------------------------------------------- | --------- |
-| `env_files`    | JSON array of `[input, output]` file path pairs, e.g. `[["./.env.prod", "./.env"], ["./.npmrc.template", "./.npmrc"]]`. Processed sequentially. | ✅ Yes    |
-| `repo_vars`    | Variables allocated on current repo               | ✅ Yes    |
-| `repo_secrets` | Variables allocated on current secret             | ✅ Yes    |
-| `cloudfront`   | Enable resolving `CLOUDFRONT_DIST_ID` from `vars`/`secrets` (default: `false`) | ❌ No |
+| `ENV_FILES`    | JSON array of `[input, output]` file path pairs, e.g. `[["./.env.prod", "./.env"], ["./.npmrc.template", "./.npmrc"]]`. Processed sequentially. | ✅ Yes    |
+| `REPO_VARS`    | Variables allocated on current repo               | ✅ Yes    |
+| `REPO_SECRETS` | Variables allocated on current secret             | ✅ Yes    |
+| `CLOUDFRONT`   | Enable resolving `CLOUDFRONT_DIST_ID` from `vars`/`secrets` (default: `false`) | ❌ No |
 
 ---
 
@@ -106,7 +106,7 @@ Each pair in `env_files` is processed sequentially: position `0` is the input te
 
 * Lines starting with `//` are ignored (treated as comments)
 * If a value is not found, the step fails explicitly (except `CLOUDFRONT_DIST_ID`, which is optional)
-* `CLOUDFRONT_DIST_ID` resolution is opt-in: it only runs when the `cloudfront` input is set to `true`. When disabled (the default), the step is skipped entirely and no output is set
+* `CLOUDFRONT_DIST_ID` resolution is opt-in: it only runs when the `CLOUDFRONT` input is set to `true`. When disabled (the default), the step is skipped entirely and no output is set
 * If the output file ends with `.json`, values are always written as JSON strings
 * Prefix `~` inside a placeholder (e.g., `'~{VAR}'`) means the value will be inserted **without quotes**
 * Arrays like `[1,2,3]` are detected and preserved as raw values
